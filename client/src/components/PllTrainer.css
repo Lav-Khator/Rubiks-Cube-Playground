@@ -348,3 +348,38 @@
 .font-mono {
   font-family: 'JetBrains Mono', monospace;
 }
+
+/* Setup and Solution display styling */
+.case-moves-info {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  margin-top: 10px;
+}
+
+.move-info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.move-info-label {
+  font-size: 0.72rem;
+  color: #64748b;
+  text-transform: uppercase;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+
+.scramble-display {
+  color: #fb923c !important;
+  border-color: rgba(249, 115, 22, 0.2) !important;
+  background: rgba(249, 115, 22, 0.03) !important;
+}
+
+.solution-display {
+  color: #34d399 !important;
+  border-color: rgba(16, 185, 129, 0.2) !important;
+  background: rgba(16, 185, 129, 0.03) !important;
+}

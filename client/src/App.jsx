@@ -399,9 +399,9 @@ export default function App() {
             </>
           ) : (
             <PllTrainer
-              onApplySetupAlg={(scramble) => {
+              onApplySetupAlg={(scramble, preferredAlg) => {
                 setSetupAlg(scramble);
-                setPlayAlg('');
+                setPlayAlg(preferredAlg || '');
                 setSolution(null);
                 setCubeStatus('Custom');
               }}

@@ -3,18 +3,85 @@ import './PllTrainer.css';
 
 const API_BASE = 'http://localhost:5000/api';
 
+// Helper to compute AoN (Average of N) client-side in csTimer style
+function computeAoN(times, n) {
+  if (times.length < n) return null;
+  const subset = times.slice(0, n); // Take the latest n times
+  const min = Math.min(...subset);
+  const max = Math.max(...subset);
+  const sum = subset.reduce((acc, val) => acc + val, 0);
+  return Math.round((sum - min - max) / (n - 2));
+}
+
+// Get statistics for a specific PLL case from localStorage
+const getLocalStats = (caseId) => {
+  const localDataStr = localStorage.getItem(`pll_solves_${caseId}`);
+  const solves = localDataStr ? JSON.parse(localDataStr) : [];
+  
+  // Sort by date descending (newest first)
+  solves.sort((a, b) => new Date(b.date) - new Date(a.date));
+  
+  if (solves.length === 0) {
+    return {
+      totalSolves: 0,
+      pb: null,
+      ao5: null,
+      ao12: null,
+      recent: []
+    };
+  }
+
+  const times = solves.map(s => s.timeMs);
+  const pb = Math.min(...times);
+  const ao5 = computeAoN(times, 5);
+  const ao12 = computeAoN(times, 12);
+
+  return {
+    totalSolves: solves.length,
+    pb,
+    ao5,
+    ao12,
+    recent: solves.slice(0, 10)
+  };
+};
+
+// Save a practice solve time locally
+const saveLocalSolve = (caseId, timeMs) => {
+  const localDataStr = localStorage.getItem(`pll_solves_${caseId}`);
+  const solves = localDataStr ? JSON.parse(localDataStr) : [];
+  
+  const newSolve = {
+    id: 'solve_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
+    timeMs,
+    date: new Date().toISOString()
+  };
+  
+  solves.push(newSolve);
+  localStorage.setItem(`pll_solves_${caseId}`, JSON.stringify(solves));
+};
+
+// Reset local history/stats
+const deleteLocalStats = (caseId) => {
+  localStorage.removeItem(`pll_solves_${caseId}`);
+};
+
 export default function PllTrainer({ onApplySetupAlg, onClearPlayAlg }) {
   const [pllCases, setPllCases] = useState([]);
   const [selectedCaseIds, setSelectedCaseIds] = useState(new Set());
   const [currentCase, setCurrentCase] = useState(null);
-  const [showAlg, setShowAlg] = useState(false);
 
   // Timer states: 'idle' | 'preparing' | 'ready' | 'running' | 'stopped'
   const [timerState, setTimerState] = useState('idle');
   const [time, setTime] = useState(0);
   const timerRef = useRef(null);
   const startTimeRef = useRef(null);
-  const spacePressedTimeRef = useRef(null);
+  const timerStateRef = useRef('idle');
+  const readyTimeoutRef = useRef(null);
+
+  const updateTimerState = (newState) => {
+    setTimerState(newState);
+    timerStateRef.current = newState;
+  };
 
   // Statistics
   const [stats, setStats] = useState({
@@ -45,10 +112,8 @@ export default function PllTrainer({ onApplySetupAlg, onClearPlayAlg }) {
   }, [currentCase]);
 
   const fetchStats = (caseId) => {
-    fetch(`${API_BASE}/pll/stats/${caseId}`)
-      .then(res => res.json())
-      .then(data => setStats(data))
-      .catch(err => console.error("Failed to fetch stats:", err));
+    const data = getLocalStats(caseId);
+    setStats(data);
   };
 
   // Checkbox handlers
@@ -79,54 +144,55 @@ export default function PllTrainer({ onApplySetupAlg, onClearPlayAlg }) {
 
     const pool = pllCases.filter(c => selectedCaseIds.has(c._id));
     const randomCase = pool[Math.floor(Math.random() * pool.length)];
-    
+
     setCurrentCase(randomCase);
-    setShowAlg(false);
-    setTimerState('idle');
+    updateTimerState('idle');
     setTime(0);
 
     // Apply the scramble setup directly to the 3D cube
-    onApplySetupAlg(randomCase.scramble);
+    onApplySetupAlg(randomCase.scramble, randomCase.preferredAlg);
   };
 
   // Speedcubing Spacebar Timer Engine
   useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (e.code !== 'Space' || !currentCase) return;
-      e.preventDefault();
+    if (!currentCase) return;
 
-      if (timerState === 'running') {
-        // Stop timer
+    const handleKeyDown = (e) => {
+      if (e.code !== 'Space') return;
+      e.preventDefault();
+      if (e.repeat) return;
+
+      const currentState = timerStateRef.current;
+
+      if (currentState === 'running') {
         stopTimer();
-      } else if (timerState === 'idle' || timerState === 'stopped') {
-        // Preparing timer (turns red)
-        if (!spacePressedTimeRef.current) {
-          spacePressedTimeRef.current = Date.now();
-          setTimerState('preparing');
-          
-          // Check if spacebar is held down for >300ms to be "Ready" (turns green)
-          timerRef.current = setInterval(() => {
-            if (spacePressedTimeRef.current && Date.now() - spacePressedTimeRef.current >= 300) {
-              setTimerState('ready');
-              clearInterval(timerRef.current);
-            }
-          }, 50);
-        }
+      } else if (currentState === 'idle' || currentState === 'stopped') {
+        updateTimerState('preparing');
+
+        // Start the ready timeout (300ms) to turn green (ready)
+        readyTimeoutRef.current = setTimeout(() => {
+          if (timerStateRef.current === 'preparing') {
+            updateTimerState('ready');
+          }
+        }, 300);
       }
     };
 
     const handleKeyUp = (e) => {
-      if (e.code !== 'Space' || !currentCase) return;
+      if (e.code !== 'Space') return;
       e.preventDefault();
 
-      if (timerState === 'preparing') {
+      const currentState = timerStateRef.current;
+
+      if (currentState === 'preparing') {
         // Space released too quickly -> reset to idle
-        clearInterval(timerRef.current);
-        spacePressedTimeRef.current = null;
-        setTimerState('idle');
-      } else if (timerState === 'ready') {
+        if (readyTimeoutRef.current) {
+          clearTimeout(readyTimeoutRef.current);
+          readyTimeoutRef.current = null;
+        }
+        updateTimerState('idle');
+      } else if (currentState === 'ready') {
         // Space released after ready hold -> start timer!
-        spacePressedTimeRef.current = null;
         startTimer();
       }
     };
@@ -134,7 +200,7 @@ export default function PllTrainer({ onApplySetupAlg, onClearPlayAlg }) {
     // Any key (excluding Space) stops the timer if it's running
     const handleGlobalKeyDown = (e) => {
       if (e.code === 'Space') return;
-      if (timerState === 'running') {
+      if (timerStateRef.current === 'running') {
         stopTimer();
       }
     };
@@ -147,16 +213,18 @@ export default function PllTrainer({ onApplySetupAlg, onClearPlayAlg }) {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
       window.removeEventListener('keydown', handleGlobalKeyDown);
-      clearInterval(timerRef.current);
+      if (readyTimeoutRef.current) {
+        clearTimeout(readyTimeoutRef.current);
+      }
     };
-  }, [timerState, currentCase]);
+  }, [currentCase]);
 
   // Click timer box to start/stop (friendly for mouse/touch users)
   const handleTimerBoxClick = () => {
     if (!currentCase) return;
-    if (timerState === 'running') {
+    if (timerStateRef.current === 'running') {
       stopTimer();
-    } else if (timerState === 'idle' || timerState === 'stopped') {
+    } else if (timerStateRef.current === 'idle' || timerStateRef.current === 'stopped') {
       // Direct instant start on click
       startTimer();
     }
@@ -164,7 +232,7 @@ export default function PllTrainer({ onApplySetupAlg, onClearPlayAlg }) {
 
   const startTimer = () => {
     setTime(0);
-    setTimerState('running');
+    updateTimerState('running');
     startTimeRef.current = Date.now();
     timerRef.current = setInterval(() => {
       setTime(Date.now() - startTimeRef.current);
@@ -175,29 +243,22 @@ export default function PllTrainer({ onApplySetupAlg, onClearPlayAlg }) {
     clearInterval(timerRef.current);
     const finalTime = Date.now() - startTimeRef.current;
     setTime(finalTime);
-    setTimerState('stopped');
+    updateTimerState('stopped');
 
     // On solve, clear the play/setup algs so the cube returns solved!
     onClearPlayAlg();
 
-    // Post statistics solve time to backend
-    fetch(`${API_BASE}/pll/stats`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ pllCaseId: currentCase._id, timeMs: finalTime })
-    })
-      .then(res => res.json())
-      .then(() => fetchStats(currentCase._id))
-      .catch(err => console.error("Failed to save time:", err));
+    // Save solve time to localStorage
+    saveLocalSolve(currentCase._id, finalTime);
+    fetchStats(currentCase._id);
   };
 
   // Reset case stats
   const handleResetStats = () => {
     if (!currentCase) return;
     if (window.confirm(`Are you sure you want to clear all history for ${currentCase.name}?`)) {
-      fetch(`${API_BASE}/pll/stats/${currentCase._id}`, { method: 'DELETE' })
-        .then(() => fetchStats(currentCase._id))
-        .catch(err => console.error("Failed to reset stats:", err));
+      deleteLocalStats(currentCase._id);
+      fetchStats(currentCase._id);
     }
   };
 
@@ -216,7 +277,7 @@ export default function PllTrainer({ onApplySetupAlg, onClearPlayAlg }) {
   return (
     <div className="pll-trainer-container">
       <div className="trainer-layout">
-        
+
         {/* Left Side: Case checklist & Pool selector */}
         <div className="case-selection-panel">
           <div className="panel-header-actions">
@@ -258,15 +319,19 @@ export default function PllTrainer({ onApplySetupAlg, onClearPlayAlg }) {
                   <span className="case-name">{currentCase.name}</span>
                   <span className="case-group-badge">{currentCase.group}</span>
                 </div>
-                <div className="alg-toggle-box">
-                  <button className="btn btn-secondary btn-sm" onClick={() => setShowAlg(!showAlg)}>
-                    {showAlg ? '🙈 Hide Alg' : '👁️ Show Alg'}
-                  </button>
-                  {showAlg && (
-                    <div className="alg-display code font-mono">
+                <div className="case-moves-info">
+                  <div className="move-info-item">
+                    <span className="move-info-label">Setup (Scramble):</span>
+                    <div className="alg-display code font-mono scramble-display">
+                      {currentCase.scramble}
+                    </div>
+                  </div>
+                  <div className="move-info-item">
+                    <span className="move-info-label">Preferred Algorithm:</span>
+                    <div className="alg-display code font-mono solution-display">
                       {currentCase.preferredAlg}
                     </div>
-                  )}
+                  </div>
                 </div>
               </div>
             ) : (
@@ -280,7 +345,7 @@ export default function PllTrainer({ onApplySetupAlg, onClearPlayAlg }) {
           </div>
 
           {/* Speedcubing Timer Box */}
-          <div 
+          <div
             className={`timer-display-box timer-state-${timerState}`}
             onClick={handleTimerBoxClick}
           >

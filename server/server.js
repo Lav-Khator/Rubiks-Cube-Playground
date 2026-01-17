@@ -24,17 +24,45 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', database: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected' });
 });
 
-// Auto-seed function
+// Helper to invert algorithm moves to create scrambles
+function invertAlg(algString) {
+  if (!algString) return '';
+  const moves = algString.trim().split(/\s+/);
+  const invertMove = (move) => {
+    if (move.endsWith("'")) {
+      return move.slice(0, -1);
+    } else if (move.endsWith('2')) {
+      return move;
+    } else {
+      return move + "'";
+    }
+  };
+  return moves.reverse().map(invertMove).join(' ');
+}
+
+// Auto-seed and sync function
 async function seedDatabase() {
   try {
-    const count = await PllCase.countDocuments();
-    if (count === 0) {
-      console.log('🌱 Database is empty. Seeding standard 21 PLL cases...');
-      await PllCase.insertMany(pllSeedData);
-      console.log('✅ Seeding completed! 21 PLL cases registered.');
-    } else {
-      console.log(`ℹ️ Database already seeded with ${count} PLL cases.`);
+    console.log('🌱 Syncing and seeding PLL cases database...');
+    for (const seed of pllSeedData) {
+      // Calculate scramble as the mathematical inverse of the preferred algorithm
+      const scramble = invertAlg(seed.preferredAlg);
+      
+      await PllCase.updateOne(
+        { name: seed.name },
+        { 
+          $set: { 
+            group: seed.group,
+            scramble: scramble,
+            preferredAlg: seed.preferredAlg,
+            alternativeAlgs: seed.alternativeAlgs 
+          }
+        },
+        { upsert: true }
+      );
     }
+    const count = await PllCase.countDocuments();
+    console.log(`✅ Database sync completed. Total PLL cases: ${count}`);
   } catch (err) {
     console.error('❌ Failed to seed database:', err);
   }
@@ -45,7 +73,7 @@ mongoose.connect(MONGO_URI)
   .then(async () => {
     console.log('🔌 Connected to MongoDB successfully.');
     await seedDatabase();
-    
+
     app.listen(PORT, () => {
       console.log(`🚀 Express server running on port ${PORT}`);
     });

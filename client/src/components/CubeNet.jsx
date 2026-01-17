@@ -54,23 +54,6 @@ export default function CubeNet({ netState, onChangeNetState, onApplyToCube, onR
     }
   };
 
-  const handleRandomize = () => {
-    const colors = ['W', 'Y', 'R', 'O', 'B', 'G'];
-    const newNet = {};
-    
-    // To make it slightly easier to get distinct centers, let's assign 6 distinct colors to the centers
-    const shuffledCenters = [...colors].sort(() => Math.random() - 0.5);
-    const faces = ['U', 'L', 'F', 'R', 'B', 'D'];
-    
-    faces.forEach((face, fIdx) => {
-      newNet[face] = Array(9).fill(null).map((_, sIdx) => {
-        if (sIdx === 4) return shuffledCenters[fIdx];
-        return colors[Math.floor(Math.random() * colors.length)];
-      });
-    });
-    
-    onChangeNetState(newNet);
-  };
 
   const renderFace = (faceName) => {
     const stickers = netState[faceName];
@@ -128,7 +111,6 @@ export default function CubeNet({ netState, onChangeNetState, onApplyToCube, onR
       {/* Controls */}
       <div className="net-controls">
         <button className="btn btn-secondary" onClick={onResetToSolved}>Reset Net to Solved</button>
-        <button className="btn btn-secondary" onClick={handleRandomize}>Randomize Net Colors</button>
         <button className="btn btn-primary btn-apply" onClick={onApplyToCube}>Apply to 3D Cube</button>
       </div>
     </div>

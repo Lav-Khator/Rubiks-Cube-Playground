@@ -9,27 +9,26 @@ export default function TwistyViewport({
 }) {
   const playerRef = useRef(null);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [tempo, setTempo] = useState(1); // 1 = 100% speed
 
-  // Keep elements synced via properties imperatively
+  // Keep elements synced via properties imperatively in a single unified effect
+  // to prevent desynchronization or WebGL animation hangs during rapid updates.
   useEffect(() => {
     if (playerRef.current) {
+      try {
+        playerRef.current.pause();
+      } catch (err) {
+        console.warn("Failed to pause twisty player:", err);
+      }
       playerRef.current.experimentalSetupAlg = experimentalSetupAlg;
-    }
-  }, [experimentalSetupAlg]);
-
-  useEffect(() => {
-    if (playerRef.current) {
       playerRef.current.alg = alg;
-      setIsPlaying(false); // Reset playing status when new algorithm is applied
+      try {
+        playerRef.current.timestamp = 0; // Force timeline back to start of the scramble
+      } catch (err) {
+        console.warn("Failed to reset twisty player timeline:", err);
+      }
+      setIsPlaying(false); // Reset playing status when new configuration is applied
     }
-  }, [alg]);
-
-  useEffect(() => {
-    if (playerRef.current) {
-      playerRef.current.tempo = tempo;
-    }
-  }, [tempo]);
+  }, [experimentalSetupAlg, alg]);
 
   const handlePlay = () => {
     if (playerRef.current) {
@@ -64,11 +63,6 @@ export default function TwistyViewport({
       playerRef.current.pause();
       setIsPlaying(false);
     }
-  };
-
-  const handleTempoChange = (e) => {
-    const newTempo = parseFloat(e.target.value);
-    setTempo(newTempo);
   };
 
   return (
@@ -130,20 +124,6 @@ export default function TwistyViewport({
           >
             🔄 Reset
           </button>
-        </div>
-
-        <div className="speed-slider-container">
-          <label htmlFor="speed-slider">Speed: {Math.round(tempo * 100)}%</label>
-          <input
-            id="speed-slider"
-            type="range"
-            min="0.25"
-            max="4"
-            step="0.25"
-            value={tempo}
-            onChange={handleTempoChange}
-            className="speed-slider"
-          />
         </div>
       </div>
     </div>

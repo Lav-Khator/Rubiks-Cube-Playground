@@ -135,15 +135,15 @@ const pllSeedData = [
   {
     name: "Na-Perm",
     group: "Diagonal Corners",
-    scramble: "z d R' U R2 D' R D R' U' R D' R' U R D R' U' z'",
-    preferredAlg: "z d R' U R2 D' R D R' U' R D' R' U R D R' U' z'",
+    scramble: "R U R' U R U R' F' R U R' U' R' F R2 U' R' U2 R U' R'",
+    preferredAlg: "R U R' U R U R' F' R U R' U' R' F R2 U' R' U2 R U' R'",
     alternativeAlgs: []
   },
   {
     name: "Nb-Perm",
     group: "Diagonal Corners",
-    scramble: "z d' L U' L2 D L' D' L U L' D L U' L' D' L U z'",
-    preferredAlg: "z d' L U' L2 D L' D' L U L' D L U' L' D' L U z'",
+    scramble: "R' U R U' R' F' U' F R U R' F R' F' R U' R",
+    preferredAlg: "R' U R U' R' F' U' F R U R' F R' F' R U' R",
     alternativeAlgs: []
   }
 ];
