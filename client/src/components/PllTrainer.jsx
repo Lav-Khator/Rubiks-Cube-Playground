@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import './PllTrainer.css';
 
-const API_BASE = 'http://localhost:5000/api';
+const API_BASE = import.meta.env.VITE_API_URL;
 
 // Helper to compute AoN (Average of N) client-side in csTimer style
 function computeAoN(times, n) {
