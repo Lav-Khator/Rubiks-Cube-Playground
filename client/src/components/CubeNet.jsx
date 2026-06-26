@@ -23,7 +23,6 @@ export default function CubeNet({ netState, onChangeNetState, onApplyToCube, onR
   const [selectedColor, setSelectedColor] = useState('W');
   const [isMouseDown, setIsMouseDown] = useState(false);
 
-  // Stop painting when mouse is released anywhere
   useEffect(() => {
     const handleMouseUp = () => setIsMouseDown(false);
     window.addEventListener('mouseup', handleMouseUp);
@@ -31,12 +30,9 @@ export default function CubeNet({ netState, onChangeNetState, onApplyToCube, onR
   }, []);
 
   const handleStickerPaint = (face, index) => {
-    // Centers should not be painted directly if it changes the face coordinates, 
-    // but the prompt says: "User picks a color from a 6-color palette (W/Y/R/O/B/G) and clicks/drags to paint stickers there."
-    // So we allow painting any sticker, including centers.
     const newFaceState = [...netState[face]];
     newFaceState[index] = selectedColor;
-    
+
     onChangeNetState({
       ...netState,
       [face]: newFaceState

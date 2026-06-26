@@ -3,10 +3,10 @@ import Cube from 'cubejs';
 import TwistyViewport from './components/TwistyViewport';
 import CubeNet from './components/CubeNet';
 import PllTrainer from './components/PllTrainer';
-import { 
-  initSolver, 
-  validateAndConvertNet, 
-  solveCube 
+import {
+  initSolver,
+  validateAndConvertNet,
+  solveCube
 } from './utils/cubeSolver';
 import './App.css';
 
@@ -39,7 +39,7 @@ export default function App() {
   const [solverStatus, setSolverStatus] = useState('initializing'); // 'initializing' | 'ready' | 'error'
   const [cubeStatus, setCubeStatus] = useState('Solved'); // 'Solved' | 'Scrambled' | 'Custom' | 'Solving'
   const [errorMessage, setErrorMessage] = useState('');
-  
+
   // Main tabs: 'playground' | 'pll-trainer'
   const [mainTab, setMainTab] = useState('playground');
 
@@ -88,7 +88,7 @@ export default function App() {
         'L': netState.L[4],
         'B': netState.B[4]
       };
-      
+
       const newNet = {
         U: Array(9).fill(null).map((_, i) => faceToColor[facelets[0 + i]]),
         R: Array(9).fill(null).map((_, i) => faceToColor[facelets[9 + i]]),
@@ -128,10 +128,10 @@ export default function App() {
     const FACES = ['U', 'D', 'R', 'L', 'F', 'B'];
     const SUFFIXES = ['', "'", '2'];
     const scrambleMoves = [];
-    
+
     let lastFace = null;
     let secondLastFace = null;
-    
+
     const count = 20 + Math.floor(Math.random() * 6); // 20-25 moves
     for (let i = 0; i < count; i++) {
       let face;
@@ -158,10 +158,10 @@ export default function App() {
 
   // Handle manual move pad presses
   const handleManualMove = (move) => {
-    const currentSetup = playAlg 
+    const currentSetup = playAlg
       ? (setupAlg ? `${setupAlg} ${playAlg}` : playAlg)
       : setupAlg;
-    
+
     const newSetup = currentSetup ? `${currentSetup} ${move}` : move;
     setSetupAlg(newSetup);
     setPlayAlg('');
@@ -192,11 +192,11 @@ export default function App() {
     setErrorMessage('');
     try {
       const faceletString = validateAndConvertNet(netState);
-      
+
       // Verify solvability using solver
       setCubeStatus('Solving');
       const sol = await solveCube(faceletString, 5000);
-      
+
       // If solvable, apply inverse solution as setup
       const setup = inverseAlg(sol);
       setSetupAlg(setup);
@@ -214,17 +214,17 @@ export default function App() {
   const handleSolve = async () => {
     if (solverStatus !== 'ready') return;
     setErrorMessage('');
-    
+
     // First commit any manual moves to the setup
-    const currentSetup = playAlg 
+    const currentSetup = playAlg
       ? (setupAlg ? `${setupAlg} ${playAlg}` : playAlg)
       : setupAlg;
-    
+
     setSetupAlg(currentSetup);
     setPlayAlg('');
 
     const faceletString = getFaceletString(currentSetup, '');
-    
+
     setCubeStatus('Solving');
     try {
       const sol = await solveCube(faceletString, 5000);
@@ -239,9 +239,9 @@ export default function App() {
 
   // Render buttons helper
   const renderMoveButton = (move) => (
-    <button 
-      key={move} 
-      className="btn btn-secondary btn-move" 
+    <button
+      key={move}
+      className="btn btn-secondary btn-move"
       onClick={() => handleManualMove(move)}
     >
       {move}
@@ -258,7 +258,7 @@ export default function App() {
           </div>
         </div>
         <div className="main-tabs">
-          <button 
+          <button
             className={`main-tab-btn ${mainTab === 'playground' ? 'active' : ''}`}
             onClick={() => {
               setMainTab('playground');
@@ -267,7 +267,7 @@ export default function App() {
           >
             🧩 Playground & Solver
           </button>
-          <button 
+          <button
             className={`main-tab-btn ${mainTab === 'pll-trainer' ? 'active' : ''}`}
             onClick={() => {
               setMainTab('pll-trainer');
@@ -296,7 +296,7 @@ export default function App() {
       <main className="app-main">
         {/* Left Side: 3D Viewport */}
         <section className="viewport-section">
-          <TwistyViewport 
+          <TwistyViewport
             experimentalSetupAlg={setupAlg}
             alg={playAlg}
           />
@@ -307,7 +307,7 @@ export default function App() {
           {mainTab === 'playground' ? (
             <>
               <div className="tabs-header">
-                <button 
+                <button
                   className={`tab-btn ${activeTab === 'controls' ? 'active' : ''}`}
                   onClick={() => {
                     setActiveTab('controls');
@@ -316,7 +316,7 @@ export default function App() {
                 >
                   🎮 Solver & Manual
                 </button>
-                <button 
+                <button
                   className={`tab-btn ${activeTab === 'custom-colors' ? 'active' : ''}`}
                   onClick={() => {
                     setActiveTab('custom-colors');
@@ -338,9 +338,9 @@ export default function App() {
                           🎰 WCA Scramble
                         </button>
                         <div className="scramble-input-group">
-                          <input 
-                            type="text" 
-                            placeholder="Enter scramble string (e.g. R U' F2...)" 
+                          <input
+                            type="text"
+                            placeholder="Enter scramble string (e.g. R U' F2...)"
                             value={manualScramble}
                             onChange={(e) => setManualScramble(e.target.value)}
                             className="text-input"
@@ -364,8 +364,8 @@ export default function App() {
 
                     {/* Solving Action */}
                     <div className="panel-group solver-actions">
-                      <button 
-                        className="btn btn-success btn-solve" 
+                      <button
+                        className="btn btn-success btn-solve"
                         onClick={handleSolve}
                         disabled={solverStatus !== 'ready' || cubeStatus === 'Solving'}
                       >
@@ -393,7 +393,7 @@ export default function App() {
                     )}
                   </div>
                 ) : (
-                  <CubeNet 
+                  <CubeNet
                     netState={netState}
                     onChangeNetState={setNetState}
                     onApplyToCube={handleApplyNetToCube}

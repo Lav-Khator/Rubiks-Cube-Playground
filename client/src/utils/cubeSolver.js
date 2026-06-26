@@ -13,7 +13,7 @@ export function initSolver() {
   initPromise = new Promise((resolve, reject) => {
     try {
       globalWorker = new SolverWorker();
-      
+
       const handleMessage = (e) => {
         if (e.data.type === 'ready') {
           globalWorker.removeEventListener('message', handleMessage);
@@ -34,13 +34,8 @@ export function initSolver() {
   return initPromise;
 }
 
-/**
- * Validates the 2D net colors.
- * Net object shape: { U: [9], L: [9], F: [9], R: [9], B: [9], D: [9] }
- * Returns the facelet string if valid, otherwise throws an Error.
- */
 export function validateAndConvertNet(net) {
-  // 1. Check center stickers are distinct
+  //Check center stickers are distinct
   const centers = {
     U: net.U[4],
     L: net.L[4],
@@ -56,7 +51,7 @@ export function validateAndConvertNet(net) {
     throw new Error("Center stickers must have 6 distinct colors.");
   }
 
-  // 2. Count total stickers of each color
+  // Count total stickers of each color
   const allStickers = [
     ...net.U, ...net.L, ...net.F,
     ...net.R, ...net.B, ...net.D
@@ -67,14 +62,13 @@ export function validateAndConvertNet(net) {
     colorCounts[color] = (colorCounts[color] || 0) + 1;
   }
 
-  // Check that all 6 center colors have exactly 9 stickers
   for (const color of centerColors) {
     if (colorCounts[color] !== 9) {
       throw new Error(`Invalid color count: Color of center face needs exactly 9 stickers, found ${colorCounts[color] || 0}.`);
     }
   }
 
-  // 3. Map colors to face letters
+  // Map colors to face letters
   const colorToFace = {};
   colorToFace[centers.U] = 'U';
   colorToFace[centers.R] = 'R';
@@ -94,25 +88,21 @@ export function validateAndConvertNet(net) {
   };
 
   // cubejs expects URFDLB order
-  const faceletString = 
-    mapFace(net.U) + 
-    mapFace(net.R) + 
-    mapFace(net.F) + 
-    mapFace(net.D) + 
-    mapFace(net.L) + 
+  const faceletString =
+    mapFace(net.U) +
+    mapFace(net.R) +
+    mapFace(net.F) +
+    mapFace(net.D) +
+    mapFace(net.L) +
     mapFace(net.B);
 
   return faceletString;
 }
 
-/**
- * Solves the facelet string with a timeout using a dedicated Web Worker.
- */
 export function solveCube(faceletString, timeoutMs = 5000) {
   return new Promise((resolve, reject) => {
-    // Create a temporary worker for this specific solve task so we can terminate it on timeout
     const solveWorker = new SolverWorker();
-    
+
     const timeoutId = setTimeout(() => {
       solveWorker.terminate();
       reject(new Error("Timeout: Solver took too long. This isn't a solvable cube state — double check your colors."));

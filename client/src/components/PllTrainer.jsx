@@ -3,10 +3,10 @@ import './PllTrainer.css';
 
 const API_BASE = import.meta.env.VITE_API_URL;
 
-// Helper to compute AoN (Average of N) client-side in csTimer style
+// Helper to compute AoN (Average of N)
 function computeAoN(times, n) {
   if (times.length < n) return null;
-  const subset = times.slice(0, n); // Take the latest n times
+  const subset = times.slice(0, n);
   const min = Math.min(...subset);
   const max = Math.max(...subset);
   const sum = subset.reduce((acc, val) => acc + val, 0);
@@ -17,10 +17,8 @@ function computeAoN(times, n) {
 const getLocalStats = (caseId) => {
   const localDataStr = localStorage.getItem(`pll_solves_${caseId}`);
   const solves = localDataStr ? JSON.parse(localDataStr) : [];
-  
-  // Sort by date descending (newest first)
   solves.sort((a, b) => new Date(b.date) - new Date(a.date));
-  
+
   if (solves.length === 0) {
     return {
       totalSolves: 0,
@@ -49,13 +47,13 @@ const getLocalStats = (caseId) => {
 const saveLocalSolve = (caseId, timeMs) => {
   const localDataStr = localStorage.getItem(`pll_solves_${caseId}`);
   const solves = localDataStr ? JSON.parse(localDataStr) : [];
-  
+
   const newSolve = {
     id: 'solve_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
     timeMs,
     date: new Date().toISOString()
   };
-  
+
   solves.push(newSolve);
   localStorage.setItem(`pll_solves_${caseId}`, JSON.stringify(solves));
 };
@@ -69,8 +67,6 @@ export default function PllTrainer({ onApplySetupAlg, onClearPlayAlg }) {
   const [pllCases, setPllCases] = useState([]);
   const [selectedCaseIds, setSelectedCaseIds] = useState(new Set());
   const [currentCase, setCurrentCase] = useState(null);
-
-  // Timer states: 'idle' | 'preparing' | 'ready' | 'running' | 'stopped'
   const [timerState, setTimerState] = useState('idle');
   const [time, setTime] = useState(0);
   const timerRef = useRef(null);
@@ -98,7 +94,6 @@ export default function PllTrainer({ onApplySetupAlg, onClearPlayAlg }) {
       .then(res => res.json())
       .then(data => {
         setPllCases(data);
-        // Default to all selected
         setSelectedCaseIds(new Set(data.map(c => c._id)));
       })
       .catch(err => console.error("Failed to load PLL cases:", err));
@@ -169,7 +164,6 @@ export default function PllTrainer({ onApplySetupAlg, onClearPlayAlg }) {
       } else if (currentState === 'idle' || currentState === 'stopped') {
         updateTimerState('preparing');
 
-        // Start the ready timeout (300ms) to turn green (ready)
         readyTimeoutRef.current = setTimeout(() => {
           if (timerStateRef.current === 'preparing') {
             updateTimerState('ready');
@@ -185,19 +179,16 @@ export default function PllTrainer({ onApplySetupAlg, onClearPlayAlg }) {
       const currentState = timerStateRef.current;
 
       if (currentState === 'preparing') {
-        // Space released too quickly -> reset to idle
         if (readyTimeoutRef.current) {
           clearTimeout(readyTimeoutRef.current);
           readyTimeoutRef.current = null;
         }
         updateTimerState('idle');
       } else if (currentState === 'ready') {
-        // Space released after ready hold -> start timer!
         startTimer();
       }
     };
 
-    // Any key (excluding Space) stops the timer if it's running
     const handleGlobalKeyDown = (e) => {
       if (e.code === 'Space') return;
       if (timerStateRef.current === 'running') {
@@ -225,7 +216,6 @@ export default function PllTrainer({ onApplySetupAlg, onClearPlayAlg }) {
     if (timerStateRef.current === 'running') {
       stopTimer();
     } else if (timerStateRef.current === 'idle' || timerStateRef.current === 'stopped') {
-      // Direct instant start on click
       startTimer();
     }
   };
@@ -245,10 +235,8 @@ export default function PllTrainer({ onApplySetupAlg, onClearPlayAlg }) {
     setTime(finalTime);
     updateTimerState('stopped');
 
-    // On solve, clear the play/setup algs so the cube returns solved!
     onClearPlayAlg();
 
-    // Save solve time to localStorage
     saveLocalSolve(currentCase._id, finalTime);
     fetchStats(currentCase._id);
   };
@@ -262,7 +250,6 @@ export default function PllTrainer({ onApplySetupAlg, onClearPlayAlg }) {
     }
   };
 
-  // Helper formatting milliseconds -> seconds (e.g. 12.34s)
   const formatTime = (ms) => {
     return (ms / 1000).toFixed(2);
   };

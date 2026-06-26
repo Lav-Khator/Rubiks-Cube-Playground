@@ -2,16 +2,14 @@ import React, { useEffect, useRef, useState } from 'react';
 import 'cubing/twisty';
 import './TwistyViewport.css';
 
-export default function TwistyViewport({ 
-  experimentalSetupAlg = '', 
-  alg = '', 
-  onMoveComplete 
+export default function TwistyViewport({
+  experimentalSetupAlg = '',
+  alg = '',
+  onMoveComplete
 }) {
   const playerRef = useRef(null);
   const [isPlaying, setIsPlaying] = useState(false);
 
-  // Keep elements synced via properties imperatively in a single unified effect
-  // to prevent desynchronization or WebGL animation hangs during rapid updates.
   useEffect(() => {
     if (playerRef.current) {
       try {
@@ -70,27 +68,27 @@ export default function TwistyViewport({
       <div className="playback-controls">
         <div className="controls-row">
           {isPlaying ? (
-            <button 
-              className="btn btn-primary btn-ctrl btn-play-pause" 
-              onClick={handlePause} 
+            <button
+              className="btn btn-primary btn-ctrl btn-play-pause"
+              onClick={handlePause}
               title="Pause"
               disabled={!alg}
             >
               ⏸️ Pause
             </button>
           ) : (
-            <button 
-              className="btn btn-primary btn-ctrl btn-play-pause" 
-              onClick={handlePlay} 
+            <button
+              className="btn btn-primary btn-ctrl btn-play-pause"
+              onClick={handlePlay}
               title="Play"
               disabled={!alg}
             >
               ▶️ Play
             </button>
           )}
-          <button 
-            className="btn btn-secondary btn-ctrl" 
-            onClick={handleReset} 
+          <button
+            className="btn btn-secondary btn-ctrl"
+            onClick={handleReset}
             title="Reset Playback"
             disabled={!alg}
           >
