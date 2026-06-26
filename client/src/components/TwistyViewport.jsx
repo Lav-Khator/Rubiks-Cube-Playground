@@ -44,18 +44,6 @@ export default function TwistyViewport({
     }
   };
 
-  const handleStepForward = () => {
-    if (playerRef.current) {
-      playerRef.current.stepForward();
-    }
-  };
-
-  const handleStepBackward = () => {
-    if (playerRef.current) {
-      playerRef.current.stepBackward();
-    }
-  };
-
   const handleReset = () => {
     if (playerRef.current) {
       // Jumps back to the start of the current algorithm (scramble or custom state)
@@ -81,14 +69,6 @@ export default function TwistyViewport({
       {/* Playback Controls */}
       <div className="playback-controls">
         <div className="controls-row">
-          <button 
-            className="btn btn-secondary btn-ctrl" 
-            onClick={handleStepBackward} 
-            title="Step Backward"
-            disabled={!alg}
-          >
-            ⏮️
-          </button>
           {isPlaying ? (
             <button 
               className="btn btn-primary btn-ctrl btn-play-pause" 
@@ -108,14 +88,6 @@ export default function TwistyViewport({
               ▶️ Play
             </button>
           )}
-          <button 
-            className="btn btn-secondary btn-ctrl" 
-            onClick={handleStepForward} 
-            title="Step Forward"
-            disabled={!alg}
-          >
-            ⏭️
-          </button>
           <button 
             className="btn btn-secondary btn-ctrl" 
             onClick={handleReset} 

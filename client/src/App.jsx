@@ -158,13 +158,18 @@ export default function App() {
 
   // Handle manual move pad presses
   const handleManualMove = (move) => {
-    const newPlayAlg = playAlg ? `${playAlg} ${move}` : move;
-    setPlayAlg(newPlayAlg);
+    const currentSetup = playAlg 
+      ? (setupAlg ? `${setupAlg} ${playAlg}` : playAlg)
+      : setupAlg;
+    
+    const newSetup = currentSetup ? `${currentSetup} ${move}` : move;
+    setSetupAlg(newSetup);
+    setPlayAlg('');
     setSolution(null);
     if (cubeStatus === 'Solved') {
       setCubeStatus('Scrambled');
     }
-    syncNetColors(setupAlg, newPlayAlg);
+    syncNetColors(newSetup, '');
   };
 
   // Reset to solved state
